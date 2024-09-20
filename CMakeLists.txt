@@ -46,6 +46,8 @@ else()
     circle.h
     rect.cpp
     rect.h
+    arc.cpp
+    arc.h
   )
 endif()
 

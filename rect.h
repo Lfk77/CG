@@ -15,13 +15,15 @@ class Rect
 {
 public:
     Rect();
-    Rect(QVector<QPoint> args);
+    Rect(QPen pen,QVector<QPoint> args);
     bool contain(QPoint p);	// 判断图元包含某点
     QPoint center() const;	// 获取图元中心
     QVector<QPoint> args() const;	// 获取图元参数
+    QPen pen() const;
     void setArgs(QVector<QPoint> args);	// 设置图元参数
 
 private:
+    QPen _pen;
     QPoint _center;	// 图元中心，用于旋转和缩放
     QVector<QPoint> _args;	// 图元参数 (对角两点坐标）
 };

@@ -1,20 +1,19 @@
-#include "circle.h"
+#include "arc.h"
 
 
 // 默认构造函数
-Circle::Circle()
+Arc::Arc()
 {
 }
 
 // 带参数的构造函数
-Circle::Circle(QPen pen,QVector<QPoint> args)
+Arc::Arc(QVector<QPoint> args)
 {
-    _pen=pen;
     _args=args;
 }
 
 // 判断点是否在几何形状内
-bool Circle::contain(QPoint pos)
+bool Arc::contain(QPoint pos)
 {
 //    foreach (QPoint p, _points)
 //    {
@@ -25,36 +24,24 @@ bool Circle::contain(QPoint pos)
 //    }
 //    return false;
 }
-QPen Circle::pen() const
-{
-    return _pen;
-}
 
 // 获取几何形状的中心点
-QPoint Circle::center() const
+QPoint Arc::center() const
 {
-    return _center;
+    return _args[2];
 }
 
 
 // 获取几何形状的参数（顶点等）
-QVector<QPoint> Circle::args() const
+QVector<QPoint> Arc::args() const
 {
     return _args;
 }
 
 // 设置几何形状的参数并计算形状的所有点及中心点
-void Circle::setArgs(QVector<QPoint> args)
+void Arc::setArgs(QVector<QPoint> args)
 {
     _args = args;
-    int x = 0, y = 0;
-    foreach (QPoint p, args)
-    {
-        x += p.x();
-        y += p.y();
-    }
-    // 计算中心点
-    _center = QPoint(x, y) / args.size();
 }
 
 

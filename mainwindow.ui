@@ -52,11 +52,16 @@
    <addaction name="action_circle"/>
    <addaction name="action_rect"/>
    <addaction name="action_fill"/>
+   <addaction name="action_arc"/>
+   <addaction name="action_clip"/>
+   <addaction name="action_addpoint"/>
+   <addaction name="action_minuspoint"/>
+   <addaction name="action_palette"/>
   </widget>
   <action name="action_line">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/new/prefix1/E:/lenovo/Documents/line.png</normaloff>:/new/prefix1/E:/lenovo/Documents/line.png</iconset>
+     <normaloff>:/resource/line.png</normaloff>:/resource/line.png</iconset>
    </property>
    <property name="text">
     <string>直线</string>
@@ -65,16 +70,19 @@
   <action name="action_circle">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/E:/lenovo/Documents/circle.png</normaloff>:/E:/lenovo/Documents/circle.png</iconset>
+     <normaloff>:/resource/circle.png</normaloff>:/resource/circle.png</iconset>
    </property>
    <property name="text">
-    <string>圆弧</string>
+    <string>圆</string>
+   </property>
+   <property name="toolTip">
+    <string>圆</string>
    </property>
   </action>
   <action name="action_rect">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/E:/lenovo/Documents/rect.png</normaloff>:/E:/lenovo/Documents/rect.png</iconset>
+     <normaloff>:/resource/rect.png</normaloff>:/resource/rect.png</iconset>
    </property>
    <property name="text">
     <string>矩形</string>
@@ -83,10 +91,55 @@
   <action name="action_fill">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/new/prefix1/E:/lenovo/Documents/line.png</normaloff>:/new/prefix1/E:/lenovo/Documents/line.png</iconset>
+     <normaloff>:/resource/line.png</normaloff>:/resource/line.png</iconset>
    </property>
    <property name="text">
     <string>填充</string>
+   </property>
+  </action>
+  <action name="action_arc">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/arc.png</normaloff>:/resource/arc.png</iconset>
+   </property>
+   <property name="text">
+    <string>圆弧</string>
+   </property>
+  </action>
+  <action name="action_clip">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/clip.png</normaloff>:/resource/clip.png</iconset>
+   </property>
+   <property name="text">
+    <string>裁剪</string>
+   </property>
+  </action>
+  <action name="action_addpoint">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/bold.png</normaloff>:/resource/bold.png</iconset>
+   </property>
+   <property name="text">
+    <string>加粗</string>
+   </property>
+  </action>
+  <action name="action_minuspoint">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/slender.png</normaloff>:/resource/slender.png</iconset>
+   </property>
+   <property name="text">
+    <string>减细</string>
+   </property>
+  </action>
+  <action name="action_palette">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/palette.png</normaloff>:/resource/palette.png</iconset>
+   </property>
+   <property name="text">
+    <string>调色板</string>
    </property>
   </action>
  </widget>

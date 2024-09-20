@@ -1,5 +1,5 @@
-#ifndef CIRCLE_H
-#define CIRCLE_H
+#ifndef ARC_H
+#define ARC_H
 
 
 #include <QPen>
@@ -11,21 +11,19 @@
 #include <QDebug>
 #include <functional>
 
-class Circle
+class Arc
 {
 public:
-    Circle();
-    Circle(QPen pen,QVector<QPoint> args);
+    Arc();
+    Arc(QVector<QPoint> args);
     bool contain(QPoint p);	// 判断图元包含某点
     QPoint center() const;	// 获取图元中心
-    QPen pen() const;
     QVector<QPoint> args() const;	// 获取图元参数
     void setArgs(QVector<QPoint> args);	// 设置图元参数
 
 private:
-    QPen _pen;
-    QPoint _center;	// 图元中心，用于旋转和缩放
-    QVector<QPoint> _args;	// 图元参数 （圆心和圆上一点坐标）
+    QVector<QPoint> _args;  //圆心、始点、终点
+
 
 };
 

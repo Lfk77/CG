@@ -5,6 +5,8 @@ Line *line;
 Circle *circle;
 Rect *rec;
 ColorPoints *fillpoint;
+Arc * arc;
+int step=0;
 // 构造函数
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),        // 调用父类 QMainWindow 的构造函数
@@ -54,24 +56,62 @@ void MainWindow::paintEvent(QPaintEvent *event)
     // 绘制所有存储的图元
     foreach (Line *l, lines)  // 画直线
     {
-        painter.setPen(pen);
-        drawLine(l->args());
+        QVector<QPoint> a=l->args();
+        //painter.setPen(l->pen());
+        drawLine(a[0].x(),a[0].y(),a[1].x(),a[1].y(),l->pen());
     }
     foreach (Circle *c, circles)  // 画圆
     {
+        QVector<QPoint> a=c->args();
+        int x0 = a[0].x(), y0 = a[0].y();
+        int x1 = a[1].x(), y1 = a[1].y();
+        int r = static_cast<int>(sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)));
+
         painter.setPen(pen);
-        drawCircle(c->args());
+        drawCircle(x0,y0,r,c->pen());
     }
     foreach (Rect *r, rects)  // 画矩形
     {
+        QVector<QPoint> a=r->args();
+        painter.setPen(r->pen());
+        drawRect(a[0].x(),a[0].y(),a[1].x(),a[1].y(),r->pen());
+    }
+
+    foreach (Arc *a, arcs)  // 画圆弧
+    {
         painter.setPen(pen);
-        drawRect(r->args());
+        QVector<QPoint> args=a->args();
+        //QPoint startPoint=args[1],endPoint=args[2],center=args[0];
+        QPoint startPoint=QPoint(100,0),endPoint=QPoint(100,400),center=QPoint(100,200);
+        double radius = std::sqrt(std::pow(startPoint.x() - center.x(), 2) +
+                                   std::pow(startPoint.y() - center.y(), 2));
+
+        double startAngle = std::atan2(startPoint.y() - center.y(), startPoint.x() - center.x());
+        double endAngle = std::atan2(endPoint.y() - center.y(), endPoint.x() - center.x());
+        double startAngleDegrees = startAngle * 180.0 / M_PI;
+        double endAngleDegrees = endAngle * 180.0 / M_PI;
+
+        // 确保起始角度小于结束角度
+        if (startAngleDegrees > endAngleDegrees) {
+            std::swap(startAngleDegrees, endAngleDegrees);
+        }
+
+        // 绘制圆弧
+        drawArc(center.x(),center.y(), radius, startAngleDegrees, endAngleDegrees);
     }
 
     foreach (ColorPoints *f, fillpoints)  // 填充
     {
+
         painter.setPen(f->color);
         painter.drawPoints(f->points);
+    }
+
+    if(state==Clip&&rec)                //裁剪
+    {
+        QVector<QPoint> a=rec->args();
+        painter.setPen(rec->pen());
+        drawRect(a[0].x(),a[0].y(),a[1].x(),a[1].y(),rec->pen());
     }
 
 
@@ -82,7 +122,8 @@ void MainWindow::paintEvent(QPaintEvent *event)
 // 鼠标左键按下事件
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
-    mouse.clear();
+    if(state!=Arcs)
+        mouse.clear();
     QPoint pos = event->pos();   // 获取鼠标点击位置
     pos.rx() -= 11;              // 调整坐标，使其适应窗口的偏移
     pos.ry() -= 51;
@@ -90,16 +131,58 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
     switch (state)
     {
     case Lines:
-        line = new Line({pos, pos});  // 创建一条线
-        lines.append(line);
+        if(event->button()==Qt::LeftButton)
+        {
+            line = new Line(pen,{pos, pos});  // 创建一条线
+            lines.append(line);
+        }
+        else if(event->button()==Qt::RightButton)
+            lines.removeLast();
         break;
      case Circles:
-        circle = new Circle({pos,pos});
-        circles.append(circle);
+        if(event->button()==Qt::LeftButton)
+        {
+            circle = new Circle(pen,{pos,pos});
+            circles.append(circle);
+        }
+        else if(event->button()==Qt::RightButton)
+            circles.removeLast();
         break;
      case Rectangle:
-        rec = new Rect({pos,pos});
-        rects.append(rec);
+        if(event->button()==Qt::LeftButton)
+        {
+            rec = new Rect(pen,{pos,pos});
+            rects.append(rec);
+        }
+        else if(event->button()==Qt::RightButton)
+            rects.removeLast();
+        break;
+     case Arcs:
+        if (event->button() == Qt::LeftButton)
+        {
+            if (step == 0)
+                // 第一次单击，确定圆心
+            {
+                step = 1;
+               // line = new Line({pos, pos});  // 创建一条线
+               // lines.append(line);
+                setMouseTracking(true);
+            }
+            else if (step == 1)
+            {
+                // 第二次单击，确定圆弧起始点
+                setMouseTracking(false);
+                mouse.append(pos);
+                //mouse.append(pos);
+                step = 2;
+                arc=new Arc(mouse);
+                arcs.append(arc);
+            }
+
+        }
+        break;
+     case Clip:
+        rec = new Rect(QPen(Qt::black, 1),{pos, pos});
         break;
      case Fill:
         if(event->button()==Qt::LeftButton)
@@ -130,6 +213,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 // 鼠标移动事件
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
+
     QPoint pos = event->pos();  // 获取鼠标当前位置
     pos.rx() -= 11;             // 调整坐标
     pos.ry() -= 51;
@@ -145,6 +229,16 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
         break;
     case Rectangle:
         rec->setArgs({mouse[0],pos});
+        break;
+    case Arcs:
+//        if(step==1)
+//            line->setArgs({mouse[0],pos});
+        if(step==2)
+            arc->setArgs({mouse[0],mouse[1],pos});
+        break;
+    case Clip:
+        rec->setArgs({mouse[0],pos});
+
         break;
 
 
@@ -164,13 +258,35 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     {
     case Lines:
         line->setArgs({mouse[0],pos});
+        if(pos==mouse[0])
+            lines.removeLast();
         break;
     case Circles:
         circle->setArgs({mouse[0], pos});  // 更新圆的终点
+        if(pos==mouse[0])
+            circles.removeLast();
         break;
     case Rectangle:
         rec->setArgs({mouse[0],pos});
+        if(pos==mouse[0])
+            rects.removeLast();
+    case Arcs:
+        if (step == 2)
+        {
+            // 第三次单击，确定圆弧终点
+            arc->setArgs({mouse[0],mouse[1],pos});
+            step = 0;
+            mouse.clear();
+        }
         break;
+    case Clip:
+        foreach (Line *p, lines)
+        {
+            args = rec->args();
+            args = p->clip(args[0], args[1]);
+            p->setArgs(args);
+        }
+        rec=nullptr;
 
 
     }
@@ -221,18 +337,42 @@ void MainWindow::on_action_fill_triggered()
     state=Fill;
     mouse.clear();
 }
+void MainWindow::on_action_arc_triggered()
+{
+    state=Arcs;
+    mouse.clear();
+}
+void MainWindow::on_action_clip_triggered()
+{
+    state=Clip;
+    mouse.clear();
+}
+void MainWindow::on_action_addpoint_triggered()
+{
+   pen.setWidth(pen.width() + 1);
+}
+
+void MainWindow::on_action_minuspoint_triggered()
+{
+    if(pen.width()>1)
+        pen.setWidth(pen.width() - 1);
+}
+void MainWindow::on_action_palette_triggered()
+{
+    pen.setColor(QColorDialog::getColor(pen.color(), this));
+}
+
+
 
 //画线
-void MainWindow::drawLine(QVector<QPoint> args)
+void MainWindow::drawLine(int x1,int y1,int x2,int y2,QPen tempen)
 {
-    int x1 = args[0].x(), y1 = args[0].y(); // 获取起点 (x1, y1)
-    int x2 = args[1].x(), y2 = args[1].y(); // 获取终点 (x2, y2)
     int dx = qAbs(x2 - x1), sx = x1 < x2 ? 1 : -1; // 计算x方向的增量dx，sx为x方向的步进（1或-1）
     int dy = qAbs(y2 - y1), sy = y1 < y2 ? 1 : -1; // 计算y方向的增量dy，sy为y方向的步进（1或-1）
     int err = (dx > dy ? dx : -dy) / 2, e; // 计算初始误差err，基于Bresenham算法的误差函数
 
     QVector<QPoint> points; // 存储所有扩展后的点，用于绘制
-    int width = pen.width() / 3; // 设置线宽，除以3使线条更细致
+    int width = tempen.width() / 3; // 设置线宽，除以3使线条更细致
     int halfWidth = width / 2; // 线宽的一半，用于扩展线条的边缘
 
     // 预估线宽扩展后的点数量，提前分配空间优化性能
@@ -267,35 +407,32 @@ void MainWindow::drawLine(QVector<QPoint> args)
     }
 
     // 使用painter直接绘制所有扩展后的点集合，生成最终的线条效果
+    painter.setPen(tempen);
     painter.drawPoints(points);
 
 }
 
 //画矩形
-void MainWindow::drawRect(QVector<QPoint> args)
+void MainWindow::drawRect(int x1,int y1,int x2,int y2,QPen tempen)
 {
     // 计算矩形的边界
-    int xmin = qMin(args[0].x(), args[1].x());
-    int ymin = qMin(args[0].y(), args[1].y());
-    int xmax = qMax(args[1].x(), args[0].x());
-    int ymax = qMax(args[1].y(), args[0].y());
+    int xmin = qMin(x1,x2);
+    int ymin = qMin(y1,y2);
+    int xmax = qMax(x1,x2);
+    int ymax = qMax(y1,y2);
 
-    drawLine({QPoint(xmin, ymin), QPoint(xmin, ymax)});
-    drawLine({QPoint(xmin, ymin), QPoint(xmax, ymin)});
-    drawLine({QPoint(xmax, ymin), QPoint(xmax, ymax)});
-    drawLine({QPoint(xmin, ymax), QPoint(xmax, ymax)});
+    drawLine(xmin, ymin,xmin, ymax,tempen);
+    drawLine(xmin, ymin,xmax, ymin,tempen);
+    drawLine(xmax, ymin,xmax, ymax,tempen);
+    drawLine(xmin, ymax, xmax, ymax,tempen);
 }
 inline uint qHash(const QPoint &p, uint seed = 0) {
     return qHash(QPair<int, int>(p.x(), p.y()), seed);
 }
 
 //画圆
-void MainWindow::drawCircle(QVector<QPoint> args)
+void MainWindow::drawCircle(int x0,int y0,int r,QPen tempen)
 {
-    int x0 = args[0].x(), y0 = args[0].y();
-    int x1 = args[1].x(), y1 = args[1].y();
-    int r = static_cast<int>(sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)));
-
     QVector<QPoint> points;
     points.reserve(8 * r);  // 预分配足够的空间
 
@@ -324,7 +461,7 @@ void MainWindow::drawCircle(QVector<QPoint> args)
         }
     }
 
-    int width = pen.width()/3;
+    int width = tempen.width()/3;
     int halfWidth = width / 2;
 
     // 处理线宽
@@ -341,72 +478,106 @@ void MainWindow::drawCircle(QVector<QPoint> args)
     painter.drawPoints(extendedPoints);
 }
 
+//画圆弧
+void MainWindow::drawArc(int x0,int y0, double radius, double startAngle, double endAngle)
+{
+    int numPoints = 1000; // 控制圆弧的平滑度
+    double angleStep = (endAngle - startAngle) / numPoints;
+
+    for (int i = 0; i <= numPoints; ++i) {
+        // 计算当前的角度
+        double angle = startAngle + i * angleStep;
+
+        // 计算圆弧上每个点的坐标
+        double x = x0 + radius * std::cos(angle * M_PI / 180.0);
+        double y = y0 + radius * std::sin(angle * M_PI / 180.0);
+
+        // 绘制该点
+        painter.drawPoint(static_cast<int>(x), static_cast<int>(y));
+    }
+}
+
 //填充
-void MainWindow::scanLineFill4(QPoint seed, const QColor &oldColor) {
+void MainWindow::scanLineFill4(QPoint seed, const QColor &oldColor)
+{
 
-    QColor newColor=pen.color();
-    QStack<QPoint> stack;
-    stack.push(seed);
+    QColor newColor = pen.color(); // 获取新的填充颜色
+    QStack<QPoint> stack; // 用于处理待填充的点
+    stack.push(seed); // 将起始点加入栈中
 
-    QVector<QPoint> points;
-    int width = image.width();
-    int height = image.height();
+    QVector<QPoint> points; // 存储填充的所有点
+    points.reserve(image.width() * image.height()); // 预分配空间以优化性能
 
+    int width = image.width(); // 图像宽度
+    int height = image.height(); // 图像高度
 
     while (!stack.isEmpty()) {
-        QPoint pt = stack.pop();
+        QPoint pt = stack.pop(); // 从栈中弹出一个点
         int x = pt.x();
         int y = pt.y();
 
-        // 扫描行，向右填充
+        // 扫描行，向左找到边界
         int xl = x;
         while (xl >= 0 && image.pixelColor(xl, y) == oldColor) {
-            image.setPixelColor(xl, y, newColor);
-            //painter.drawLine(QPoint(xl,y),QPoint(width,height));
-            points.append(QPoint(xl,y));
             xl--;
         }
-        xl++;
+        xl++; // 调整到最后一个有效点的位置
 
-        // 扫描行，向左填充
+        // 扫描行，向右找到边界
         int xr = x+1;
         while (xr < width && image.pixelColor(xr, y) == oldColor) {
-            image.setPixelColor(xr, y, newColor);
-            points.append(QPoint(xr,y));
             xr++;
         }
-        xr--;
+        xr--; // 调整到最后一个有效点的位置
+
+        // 填充当前扫描线的点
+        for (int i = xl; i <= xr; ++i) {
+            image.setPixelColor(i, y, newColor);
+            points.append(QPoint(i, y)); // 记录填充的点
+        }
 
         // 处理上面一条扫描线
-        for (int i = xl; i <= xr; ++i) {
-            if (y > 0) {
+        if (y > 0) {
+            // 扫描左边界
+            for (int i = xl; i <= xr; ++i) {
                 if (image.pixelColor(i, y - 1) == oldColor) {
                     int left = i, right = i;
                     while (left >= xl && image.pixelColor(left, y - 1) == oldColor) left--;
                     while (right <= xr && image.pixelColor(right, y - 1) == oldColor) right++;
                     if (right > left) {
-                        stack.push(QPoint((left + right) / 2, y - 1));
+                        stack.push(QPoint((left + right) / 2, y - 1)); // 将中点加入栈中
                     }
                 }
             }
+        }
 
-            // 处理下面一条扫描线
-            if (y < height - 1) {
+        // 处理下面一条扫描线
+        if (y < height - 1) {
+            // 扫描左边界
+            for (int i = xl; i <= xr; ++i) {
                 if (image.pixelColor(i, y + 1) == oldColor) {
                     int left = i, right = i;
                     while (left >= xl && image.pixelColor(left, y + 1) == oldColor) left--;
                     while (right <= xr && image.pixelColor(right, y + 1) == oldColor) right++;
                     if (right > left) {
-                        stack.push(QPoint((left + right) / 2, y + 1));
+                        stack.push(QPoint((left + right) / 2, y + 1)); // 将中点加入栈中
                     }
                 }
             }
         }
     }
-    fillpoint=new ColorPoints;
-    fillpoint->points=points;
-    fillpoint->color=newColor;
+
+    // 保存填充的点和颜色
+    fillpoint = new ColorPoints;
+    fillpoint->points = points;
+    fillpoint->color = newColor;
     fillpoints.append(fillpoint);
 }
+
+
+
+
+
+
 
 

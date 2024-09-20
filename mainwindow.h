@@ -4,6 +4,7 @@
 #include"circle.h"
 #include "line.h"
 #include "rect.h"
+#include "arc.h"
 #include <QMainWindow>
 #include <QPaintEvent>
 #include <QMouseEvent>
@@ -47,9 +48,10 @@ public:
     void contextMenuEvent(QContextMenuEvent *event); //鼠标右键按下事件
 
     //画图
-    void drawLine(QVector<QPoint> args);//画线
-    void drawRect(QVector<QPoint> args);//画矩形
-    void drawCircle(QVector<QPoint> args);//画圆
+    void drawLine(int x1,int y1,int x2,int y2,QPen tempen);//画线
+    void drawRect(int x1,int y1,int x2,int y2,QPen tempen);//画矩形
+    void drawCircle(int x0,int y0,int r,QPen tempen);//画圆
+    void drawArc(int x0,int y0, double radius, double startAngle, double endAngle);//画圆弧
 
     void scanLineFill4(QPoint seed, const QColor &oldColor);
 
@@ -61,15 +63,26 @@ private slots:
 
     void on_action_fill_triggered();
 
+    void on_action_arc_triggered();
+
+    void on_action_clip_triggered();
+
+    void on_action_addpoint_triggered();
+
+    void on_action_minuspoint_triggered();
+
+    void on_action_palette_triggered();
+
 private:
 
     Ui::MainWindow *ui;
-    enum State {Lines, Triangle, Rectangle,Circles, Ellipse, Polygon, Curve,
+    enum State {Lines, Triangle,Arcs, Rectangle,Circles, Ellipse, Polygon, Curve,
                 Translate, Rotate, Clip, ZoomIn, ZoomOut, Trash,Fill} state;	// 程序状态
     QVector<QPoint> mouse;			// 记录鼠标点击位置
     QList<Line *> lines;
     QList<Circle *> circles;
     QList<Rect *> rects;
+    QList<Arc *> arcs;
     QImage image;					// 画布
     QPixmap pixmap;
     QList<ColorPoints *> fillpoints;

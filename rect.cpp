@@ -7,8 +7,9 @@ Rect::Rect()
 }
 
 // 带参数的构造函数
-Rect::Rect(QVector<QPoint> args)
+Rect::Rect(QPen pen,QVector<QPoint> args)
 {
+    _pen=pen;
     _args=args;
 }
 
@@ -36,6 +37,11 @@ QPoint Rect::center() const
 QVector<QPoint> Rect::args() const
 {
     return _args;
+}
+
+QPen Rect::pen() const
+{
+    return _pen;
 }
 
 // 设置几何形状的参数并计算形状的中心点
